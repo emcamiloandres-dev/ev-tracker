@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EV Tracker - Mi Vehículo</title>
+    <style>
+        body { font-family: sans-serif; background: #121212; color: white; text-align: center; padding: 20px; }
+        .card { background: #1e1e1e; border-radius: 15px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        input { width: 80%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; }
+        button { background: #00e676; color: black; border: none; padding: 15px 30px; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        #status { font-size: 1.2em; color: #00e676; }
+        .alert { color: #ff5252; font-weight: bold; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+    </style>
+</head>
+<body>
+
+    <h2>⚡ EV Tracker</h2>
+
+    <div id="setup" class="card">
+        <h3>Configuración Inicial</h3>
+        <input type="number" id="autonomiaMax" placeholder="Autonomía Total (km)">
+        <p><small>Ej: Si tu patineta hace 30km al 100%</small></p>
+        <button onclick="iniciarViaje()">Iniciar Seguimiento GPS</button>
+    </div>
+
+    <div id="dashboard" class="card" style="display:none;">
+        <p>Distancia: <span id="distancia">0.00</span> km</p>
+        <div style="font-size: 2em; margin: 10px 0;">
+            🔋 <span id="bateria">100</span>%
+        </div>
+        <p>Autonomía Restante: <span id="restante">0.00</span> km</p>
+        <div id="alertaCarga" class="alert" style="display:none;">⚠️ ¡NECESITA CARGA!</div>
+        <button onclick="location.reload()" style="background:#555; color:white;">Reiniciar</button>
+    </div>
+
+    <script>
+        let totalDistancia = 0;
+        let ultimaPos = null;
+        let autonomiaMax = 0;
+
+        function iniciarViaje() {
+            autonomiaMax = parseFloat(document.getElementById('autonomiaMax').value);
+            if (!autonomiaMax) return alert("Por favor ingresa la autonomía.");
+
+            document.getElementById('setup').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'block';
+
+            // Activar GPS en tiempo real
+            navigator.geolocation.watchPosition(pos => {
+                if (ultimaPos) {
+                    const d = haversine(
+                        ultimaPos.latitude, ultimaPos.longitude,
+                        pos.coords.latitude, pos.coords.longitude
+                    );
+                    if (d > 0.005) { // Solo sumar si se movió más de 5 metros (evita saltos de señal)
+                        totalDistancia += d;
+                        actualizarUI();
+                    }
+                }
+                ultimaPos = pos.coords;
+            }, err => alert("Error GPS: " + err.message), { 
+                enableHighAccuracy: true,
+                maximumAge: 0 
+            });
+        }
+
+        function haversine(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Radio Tierra km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) ** 2 +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon / 2) ** 2;
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+
+        function actualizarUI() {
+            const porcentaje = Math.max(0, 100 - (totalDistancia * 100 / autonomiaMax));
+            const restante = Math.max(0, autonomiaMax - totalDistancia);
+
+            document.getElementById('distancia').innerText = totalDistancia.toFixed(2);
+            document.getElementById('bateria').innerText = Math.round(porcentaje);
+            document.getElementById('restante').innerText = restante.toFixed(2);
+
+            if (porcentaje <= 20) {
+                document.getElementById('alertaCarga').style.display = 'block';
+                if (navigator.vibrate) navigator.vibrate(500);
+            }
+        }
+    </script>
+</body>
+</html>
