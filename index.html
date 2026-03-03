@@ -3,92 +3,161 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EV Tracker - Mi Vehículo</title>
+    <title>EV Tracker - Odómetro</title>
+    <link rel="manifest" href="manifest.json">
     <style>
-        body { font-family: sans-serif; background: #121212; color: white; text-align: center; padding: 20px; }
-        .card { background: #1e1e1e; border-radius: 15px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-        input { width: 80%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; }
-        button { background: #00e676; color: black; border: none; padding: 15px 30px; border-radius: 10px; font-weight: bold; cursor: pointer; }
-        #status { font-size: 1.2em; color: #00e676; }
-        .alert { color: #ff5252; font-weight: bold; animation: blink 1s infinite; }
+        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: white; text-align: center; padding: 20px; margin: 0; }
+        .card { background: #1e1e1e; border-radius: 15px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); border: 1px solid #333; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left; }
+        label { font-size: 0.8em; color: #aaa; margin-bottom: 5px; display: block; }
+        input { width: 90%; padding: 10px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #444; background: #252525; color: white; }
+        button { background: #00e676; color: black; border: none; padding: 15px; border-radius: 10px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; }
+        .btn-reset { background: #ff9100; color: white; margin-top: 5px; }
+        .btn-secondary { background: #444; color: white; }
+        .valor { color: #00e676; font-weight: bold; font-size: 1.2em; }
+        .historial-item { text-align: left; font-size: 0.85em; border-bottom: 1px solid #333; padding: 10px 0; }
+        .alert { color: #ff5252; font-weight: bold; animation: blink 1s infinite; margin-top: 10px; }
         @keyframes blink { 50% { opacity: 0; } }
     </style>
 </head>
 <body>
 
-    <h2>⚡ EV Tracker</h2>
+    <h2 style="color: #00e676;">⚡ EV Tracker Pro</h2>
 
     <div id="setup" class="card">
-        <h3>Configuración Inicial</h3>
-        <input type="number" id="autonomiaMax" placeholder="Autonomía Total (km)">
-        <p><small>Ej: Si tu patineta hace 30km al 100%</small></p>
-        <button onclick="iniciarViaje()">Iniciar Seguimiento GPS</button>
+        <h3>Panel de Control</h3>
+        
+        <div class="grid">
+            <div>
+                <label>Odómetro Total (km)</label>
+                <input type="number" id="odoTotal" step="0.1" placeholder="Ej: 1250.5">
+            </div>
+            <div>
+                <label>Autonomía Máx (km)</label>
+                <input type="number" id="autonomiaMax" placeholder="Ej: 45">
+            </div>
+        </div>
+
+        <button onclick="resetearCarga()" class="btn-reset">🔋 Resetear Ciclo de Carga (100%)</button>
+        <p style="font-size: 0.8em; color: #888;">Última carga: <span id="infoCarga">Nunca</span></p>
+        
+        <button onclick="iniciarViaje()" style="margin-top: 20px;">▶️ Iniciar Recorrido GPS</button>
+        
+        <div style="margin-top: 20px;">
+            <h4>Últimos 5 Viajes</h4>
+            <div id="listaHistorial"></div>
+        </div>
     </div>
 
     <div id="dashboard" class="card" style="display:none;">
-        <p>Distancia: <span id="distancia">0.00</span> km</p>
-        <div style="font-size: 2em; margin: 10px 0;">
+        <div class="grid">
+            <p>Odómetro:<br><span id="dispOdo" class="valor">0</span> km</p>
+            <p>En este viaje:<br><span id="distancia" class="valor">0.00</span> km</p>
+        </div>
+        
+        <div style="font-size: 3em; margin: 15px 0;">
             🔋 <span id="bateria">100</span>%
         </div>
-        <p>Autonomía Restante: <span id="restante">0.00</span> km</p>
-        <div id="alertaCarga" class="alert" style="display:none;">⚠️ ¡NECESITA CARGA!</div>
-        <button onclick="location.reload()" style="background:#555; color:white;">Reiniciar</button>
+        
+        <p>Autonomía Restante: <span id="restante" class="valor">0.00</span> km</p>
+        <div id="alertaCarga" class="alert" style="display:none;">⚠️ ¡BATERÍA BAJA!</div>
+        
+        <button onclick="finalizarViaje()">🏁 Finalizar y Guardar</button>
     </div>
 
     <script>
-        let totalDistancia = 0;
+        let totalDistanciaViaje = 0;
         let ultimaPos = null;
-        let autonomiaMax = 0;
+        let watchID = null;
+
+        // Cargar datos guardados
+        window.onload = () => {
+            document.getElementById('odoTotal').value = localStorage.getItem('ev_odo') || 0;
+            document.getElementById('autonomiaMax').value = localStorage.getItem('ev_autonomia') || 0;
+            document.getElementById('infoCarga').innerText = localStorage.getItem('ev_fecha_carga') || "Sin registro";
+            mostrarHistorial();
+        };
+
+        function resetearCarga() {
+            if(confirm("¿Confirmas que la batería está al 100%?")) {
+                localStorage.setItem('ev_km_desde_carga', 0);
+                localStorage.setItem('ev_fecha_carga', new Date().toLocaleString());
+                document.getElementById('infoCarga').innerText = localStorage.getItem('ev_fecha_carga');
+                alert("Ciclo de carga reiniciado.");
+            }
+        }
 
         function iniciarViaje() {
-            autonomiaMax = parseFloat(document.getElementById('autonomiaMax').value);
-            if (!autonomiaMax) return alert("Por favor ingresa la autonomía.");
+            const odo = parseFloat(document.getElementById('odoTotal').value) || 0;
+            const auto = parseFloat(document.getElementById('autonomiaMax').value) || 0;
+            
+            if (auto <= 0) return alert("Ingresa la autonomía máxima");
 
+            localStorage.setItem('ev_odo', odo);
+            localStorage.setItem('ev_autonomia', auto);
+            
+            totalDistanciaViaje = 0;
             document.getElementById('setup').style.display = 'none';
             document.getElementById('dashboard').style.display = 'block';
 
-            // Activar GPS en tiempo real
-            navigator.geolocation.watchPosition(pos => {
+            watchID = navigator.geolocation.watchPosition(pos => {
                 if (ultimaPos) {
-                    const d = haversine(
-                        ultimaPos.latitude, ultimaPos.longitude,
-                        pos.coords.latitude, pos.coords.longitude
-                    );
-                    if (d > 0.005) { // Solo sumar si se movió más de 5 metros (evita saltos de señal)
-                        totalDistancia += d;
-                        actualizarUI();
+                    const d = haversine(ultimaPos.latitude, ultimaPos.longitude, pos.coords.latitude, pos.coords.longitude);
+                    if (d > 0.005) { 
+                        totalDistanciaViaje += d;
+                        actualizarUI(odo, auto);
                     }
                 }
                 ultimaPos = pos.coords;
-            }, err => alert("Error GPS: " + err.message), { 
-                enableHighAccuracy: true,
-                maximumAge: 0 
-            });
+            }, null, { enableHighAccuracy: true });
+        }
+
+        function actualizarUI(odoInicial, autoMax) {
+            let kmDesdeCarga = parseFloat(localStorage.getItem('ev_km_desde_carga') || 0) + totalDistanciaViaje;
+            let odoActual = odoInicial + totalDistanciaViaje;
+            
+            let porc = Math.max(0, 100 - (kmDesdeCarga * 100 / autoMax));
+            let rest = Math.max(0, autoMax - kmDesdeCarga);
+
+            document.getElementById('dispOdo').innerText = odoActual.toFixed(1);
+            document.getElementById('distancia').innerText = totalDistanciaViaje.toFixed(2);
+            document.getElementById('bateria').innerText = Math.round(porc);
+            document.getElementById('restante').innerText = rest.toFixed(2);
+            document.getElementById('alertaCarga').style.display = porc <= 20 ? 'block' : 'none';
+        }
+
+        function finalizarViaje() {
+            let odoActual = parseFloat(document.getElementById('dispOdo').innerText);
+            let kmDesdeCargaPrevio = parseFloat(localStorage.getItem('ev_km_desde_carga') || 0);
+            
+            // Guardar nuevos totales
+            localStorage.setItem('ev_odo', odoActual);
+            localStorage.setItem('ev_km_desde_carga', kmDesdeCargaPrevio + totalDistanciaViaje);
+
+            // Guardar en historial
+            let historial = JSON.parse(localStorage.getItem('ev_historial') || "[]");
+            historial.unshift({ fecha: new Date().toLocaleString(), distancia: totalDistanciaViaje.toFixed(2) });
+            localStorage.setItem('ev_historial', JSON.stringify(historial.slice(0, 5)));
+
+            if (watchID) navigator.geolocation.clearWatch(watchID);
+            location.reload(); 
         }
 
         function haversine(lat1, lon1, lat2, lon2) {
-            const R = 6371; // Radio Tierra km
+            const R = 6371;
             const dLat = (lat2 - lat1) * Math.PI / 180;
             const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat / 2) ** 2 +
-                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                      Math.sin(dLon / 2) ** 2;
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            return R * c;
+            const a = Math.sin(dLat / 2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         }
 
-        function actualizarUI() {
-            const porcentaje = Math.max(0, 100 - (totalDistancia * 100 / autonomiaMax));
-            const restante = Math.max(0, autonomiaMax - totalDistancia);
-
-            document.getElementById('distancia').innerText = totalDistancia.toFixed(2);
-            document.getElementById('bateria').innerText = Math.round(porcentaje);
-            document.getElementById('restante').innerText = restante.toFixed(2);
-
-            if (porcentaje <= 20) {
-                document.getElementById('alertaCarga').style.display = 'block';
-                if (navigator.vibrate) navigator.vibrate(500);
-            }
+        function mostrarHistorial() {
+            const historial = JSON.parse(localStorage.getItem('ev_historial') || "[]");
+            const lista = document.getElementById('listaHistorial');
+            lista.innerHTML = historial.length ? "" : "<p>No hay viajes</p>";
+            historial.forEach(item => {
+                lista.innerHTML += `<div class="historial-item">📅 ${item.fecha} | 🏁 <span class="valor">${item.distancia} km</span></div>`;
+            });
         }
     </script>
 </body>
