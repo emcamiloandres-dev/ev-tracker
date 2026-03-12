@@ -18,6 +18,7 @@
         .btn-stop { background: #ff5252 !important; color: white; margin-top: 15px; }
         .btn-secondary { background: #444; color: white; border: 2px solid #555; }
         
+        /* Gráfico de Batería Circular */
         .battery-container { position: relative; width: 120px; height: 120px; margin: 0 auto 15px auto; }
         .battery-svg { transform: rotate(-90deg); width: 120px; height: 120px; }
         .circle-bg { fill: none; stroke: #333; stroke-width: 8; }
@@ -109,29 +110,37 @@
     <script>
         let totalDistanciaViaje = 0, ultimaPos = null, watchID = null, map = null, marker = null, wakeLock = null;
 
+        // CARGA SEGURA AL INICIAR
         window.onload = () => {
-            document.getElementById('odoTotal').value = localStorage.getItem('ev_odo') || 0;
-            document.getElementById('autonomiaMax').value = localStorage.getItem('ev_autonomia') || 0;
+            const savedOdo = localStorage.getItem('ev_odo');
+            const savedAuto = localStorage.getItem('ev_autonomia');
+            
+            if (savedOdo !== null) document.getElementById('odoTotal').value = savedOdo;
+            if (savedAuto !== null) document.getElementById('autonomiaMax').value = savedAuto;
+            
             document.getElementById('infoCarga').innerText = localStorage.getItem('ev_fecha_carga') || "Sin registro";
+            
             actualizarEstadoInicial();
             mostrarHistorial();
         };
 
         function actualizarEstadoInicial() {
             const odoInput = document.getElementById('odoTotal');
-            const autoMax = parseFloat(document.getElementById('autonomiaMax').value) || 0;
-            const odoAnterior = parseFloat(localStorage.getItem('ev_odo') || 0);
+            const autoInput = document.getElementById('autonomiaMax');
+            
             const odoNuevo = parseFloat(odoInput.value) || 0;
+            const autoMax = parseFloat(autoInput.value) || 0;
+            
+            const odoAnterior = parseFloat(localStorage.getItem('ev_odo') || 0);
 
+            // Solo actuar si el nuevo valor es mayor (detección de km olvidados)
             if (odoNuevo > odoAnterior && odoAnterior > 0) {
                 const diff = odoNuevo - odoAnterior;
                 let kmDesdeCarga = parseFloat(localStorage.getItem('ev_km_desde_carga') || 0);
                 kmDesdeCarga += diff;
                 
                 localStorage.setItem('ev_km_desde_carga', kmDesdeCarga);
-                localStorage.setItem('ev_odo', odoNuevo);
-
-                // REGISTRAR EN HISTORIAL COMO AJUSTE MANUAL
+                
                 let historial = JSON.parse(localStorage.getItem('ev_historial') || "[]");
                 historial.unshift({ 
                     fecha: new Date().toLocaleString(), 
@@ -140,11 +149,13 @@
                 });
                 localStorage.setItem('ev_historial', JSON.stringify(historial.slice(0, 5)));
                 mostrarHistorial();
-            } else {
-                localStorage.setItem('ev_odo', odoNuevo);
             }
-            
+
+            // GUARDADO SIEMPRE ACTIVO
+            localStorage.setItem('ev_odo', odoNuevo);
             localStorage.setItem('ev_autonomia', autoMax);
+
+            // Refrescar gráfica circular
             const kmDesdeCargaActual = parseFloat(localStorage.getItem('ev_km_desde_carga') || 0);
             if (autoMax > 0) {
                 const porc = Math.max(0, 100 - (kmDesdeCargaActual * 100 / autoMax));
@@ -176,16 +187,83 @@
             const odo = parseFloat(document.getElementById('odoTotal').value) || 0;
             const auto = parseFloat(document.getElementById('autonomiaMax').value) || 0;
             if (auto <= 0) return alert("Ingresa autonomía máxima");
-            localStorage.setItem('ev_odo', odo);
-            localStorage.setItem('ev_autonomia', auto);
-            totalDistanciaViaje = 0; ultimaPos = null;
+
+            totalDistanciaViaje = 0; 
+            ultimaPos = null;
             document.getElementById('setup').style.display = 'none';
             document.getElementById('dashboard').style.display = 'block';
+
             if (!map) {
                 map = L.map('map', { dragging: false, touchZoom: false, scrollWheelZoom: false, doubleClickZoom: false, zoomControl: false, attributionControl: false }).setView([0, 0], 17);
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
                 marker = L.marker([0, 0]).addTo(map);
             }
+
             watchID = navigator.geolocation.watchPosition(pos => {
                 const lat = pos.coords.latitude, lon = pos.coords.longitude;
-                map.setView([lat, lon], 17); marker.setLatLng([lat,
+                map.setView([lat, lon], 17); marker.setLatLng([lat, lon]);
+                if (ultimaPos) {
+                    const d = haversine(ultimaPos.latitude, ultimaPos.longitude, lat, lon);
+                    if (d > 0.005) { totalDistanciaViaje += d; actualizarUI(odo, auto); }
+                }
+                ultimaPos = { latitude: lat, longitude: lon };
+            }, null, { enableHighAccuracy: true });
+        }
+
+        function haversine(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180, dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+            return (R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))) * 1.173;
+        }
+
+        function actualizarUI(odoInicial, autoMax) {
+            let kmDesdeCarga = parseFloat(localStorage.getItem('ev_km_desde_carga') || 0) + totalDistanciaViaje;
+            let porc = Math.max(0, 100 - (kmDesdeCarga * 100 / autoMax));
+            document.getElementById('dispOdo').innerText = (odoInicial + totalDistanciaViaje).toFixed(1);
+            document.getElementById('distancia').innerText = totalDistanciaViaje.toFixed(2);
+            document.getElementById('bateria').innerText = Math.round(porc);
+            document.getElementById('restante').innerText = (autoMax - kmDesdeCarga).toFixed(2);
+            document.getElementById('alertaCarga').style.display = porc <= 20 ? 'block' : 'none';
+        }
+
+        function finalizarViaje() {
+            let odoFinal = parseFloat(document.getElementById('dispOdo').innerText);
+            let kmDesdeCargaPrevio = parseFloat(localStorage.getItem('ev_km_desde_carga') || 0);
+            
+            // GUARDAR ANTES DE RECARGAR
+            localStorage.setItem('ev_odo', odoFinal);
+            localStorage.setItem('ev_km_desde_carga', kmDesdeCargaPrevio + totalDistanciaViaje);
+
+            let historial = JSON.parse(localStorage.getItem('ev_historial') || "[]");
+            historial.unshift({ fecha: new Date().toLocaleString(), distancia: totalDistanciaViaje.toFixed(2), esManual: false });
+            localStorage.setItem('ev_historial', JSON.stringify(historial.slice(0, 5)));
+            
+            if (watchID) navigator.geolocation.clearWatch(watchID);
+            if (wakeLock) wakeLock.release();
+            
+            // Pequeña pausa para asegurar el guardado antes de recargar
+            setTimeout(() => { location.reload(); }, 100);
+        }
+
+        function resetearCarga() {
+            if(confirm("¿Batería al 100%?")) {
+                localStorage.setItem('ev_km_desde_carga', 0);
+                localStorage.setItem('ev_fecha_carga', new Date().toLocaleString());
+                location.reload();
+            }
+        }
+
+        function mostrarHistorial() {
+            const data = localStorage.getItem('ev_historial');
+            const historial = data ? JSON.parse(data) : [];
+            const lista = document.getElementById('listaHistorial');
+            lista.innerHTML = historial.length ? "" : "<p style='color:#666'>No hay viajes registrados.</p>";
+            historial.forEach(item => {
+                const tag = item.esManual ? '<span class="tag-manual"> (Ajuste manual)</span>' : '';
+                lista.innerHTML += `<div class="historial-item">📅 ${item.fecha}${tag}<br>🏁 Distancia: <span class="valor" style="font-size:1em">${item.distancia} km</span></div>`;
+            });
+        }
+    </script>
+</body>
+</html>
