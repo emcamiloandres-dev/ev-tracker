@@ -7,7 +7,8 @@
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: white; text-align: center; padding: 10px; margin: 0; overflow-x: hidden; }
+        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: white; text-align: center; padding: 10px; margin: 0; overflow-x: hidden; display: flex; flex-direction: column; min-height: 100vh; }
+        .content { flex: 1; }
         .card { background: #1e1e1e; border-radius: 15px; padding: 15px; margin-bottom: 10px; border: 1px solid #333; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         label { font-size: 0.8em; color: #aaa; margin-bottom: 4px; display: block; text-align: left; }
@@ -29,66 +30,71 @@
         .historial-item { text-align: left; font-size: 0.85em; border-bottom: 1px solid #333; padding: 10px 0; color: #ddd; }
         .tag-manual { color: #ff9100; font-size: 0.8em; font-weight: bold; }
         .alert { color: #ff5252; font-weight: bold; animation: blink 1s infinite; margin-top: 10px; }
+        .footer-version { font-size: 0.65em; color: #333; margin: 15px 0 5px 0; font-weight: 300; letter-spacing: 1px; }
         @keyframes blink { 50% { opacity: 0; } }
     </style>
 </head>
 <body>
 
-    <div id="setup" class="card">
-        <h2 style="color: #00e676; margin: 0 0 15px 0;">⚡ EV Tracker Pro</h2>
-        <div class="battery-container">
-            <svg class="battery-svg">
-                <circle class="circle-bg" cx="60" cy="60" r="50"></circle>
-                <circle id="circleMain" class="circle-progress" cx="60" cy="60" r="50"></circle>
-            </svg>
-            <div class="battery-text"><span id="percMain">0</span>%</div>
-        </div>
-        <div style="margin-bottom: 20px;">
-            <span style="color: #aaa; font-size: 0.9em;">Estimado restante:</span>
-            <div style="font-size: 1.8em; font-weight: bold; color: #00e676;"><span id="kmMain">0.0</span> km</div>
-        </div>
-        <div class="grid">
-            <div>
-                <label>Odómetro Total (km)</label>
-                <input type="number" id="odoTotal" step="0.1" onchange="actualizarEstadoInicial()">
+    <div class="content">
+        <div id="setup" class="card">
+            <h2 style="color: #00e676; margin: 0 0 15px 0;">⚡ EV Tracker Pro</h2>
+            <div class="battery-container">
+                <svg class="battery-svg">
+                    <circle class="circle-bg" cx="60" cy="60" r="50"></circle>
+                    <circle id="circleMain" class="circle-progress" cx="60" cy="60" r="50"></circle>
+                </svg>
+                <div class="battery-text"><span id="percMain">0</span>%</div>
             </div>
-            <div>
-                <label>Autonomía Máx (km)</label>
-                <input type="number" id="autonomiaMax" onchange="actualizarEstadoInicial()">
+            <div style="margin-bottom: 20px;">
+                <span style="color: #aaa; font-size: 0.9em;">Estimado restante:</span>
+                <div style="font-size: 1.8em; font-weight: bold; color: #00e676;"><span id="kmMain">0.0</span> km</div>
+            </div>
+            <div class="grid">
+                <div>
+                    <label>Odómetro Total (km)</label>
+                    <input type="number" id="odoTotal" step="0.1" onchange="actualizarEstadoInicial()">
+                </div>
+                <div>
+                    <label>Autonomía Máx (km)</label>
+                    <input type="number" id="autonomiaMax" onchange="actualizarEstadoInicial()">
+                </div>
+            </div>
+            <button onclick="resetearCarga()" class="btn-reset">🔋 Resetear Ciclo de Carga</button>
+            <p style="font-size: 0.75em; color: #888; margin-bottom: 15px;">Última carga: <span id="infoCarga">-</span></p>
+            <button onclick="iniciarViaje()" style="font-size: 1.2em;">▶️ INICIAR RECORRIDO</button>
+            <div style="margin-top: 20px; text-align: left;">
+                <h4 style="border-bottom: 1px solid #444; padding-bottom: 5px;">Últimos 5 Viajes</h4>
+                <div id="listaHistorial"></div>
             </div>
         </div>
-        <button onclick="resetearCarga()" class="btn-reset">🔋 Resetear Ciclo de Carga</button>
-        <p style="font-size: 0.75em; color: #888; margin-bottom: 15px;">Última carga: <span id="infoCarga">-</span></p>
-        <button onclick="iniciarViaje()" style="font-size: 1.2em;">▶️ INICIAR RECORRIDO</button>
-        <div style="margin-top: 20px; text-align: left;">
-            <h4 style="border-bottom: 1px solid #444; padding-bottom: 5px;">Últimos 5 Viajes</h4>
-            <div id="listaHistorial"></div>
+
+        <div id="dashboard" class="card" style="display:none;">
+            <div class="map-container">
+                <div id="map"></div>
+                <div class="map-overlay"></div>
+            </div>
+            <button id="btnWakeLock" onclick="toggleWakeLock()" class="btn-secondary">
+                Pantalla: AUTO (Se apagará)
+            </button>
+            <div class="grid" style="margin-top: 15px;">
+                <div style="background: #252525; padding: 10px; border-radius: 10px;">
+                    <span style="font-size: 0.8em; color: #aaa;">Odómetro</span>
+                    <span id="dispOdo" class="valor">0</span>
+                </div>
+                <div style="background: #252525; padding: 10px; border-radius: 10px;">
+                    <span style="font-size: 0.8em; color: #aaa;">Este viaje</span>
+                    <span id="distancia" class="valor">0.00</span>
+                </div>
+            </div>
+            <div style="font-size: 2.2em; margin: 15px 0; font-weight: bold;">🔋 <span id="bateria">100</span>%</div>
+            <p style="color: #aaa; margin: 0;">Restante estimado: <span id="restante" class="valor" style="display: inline;">0.00</span> km</p>
+            <div id="alertaCarga" class="alert" style="display:none;">⚠️ ¡BATERÍA BAJA!</div>
+            <button onclick="finalizarViaje()" class="btn-stop">🏁 FINALIZAR Y GUARDAR</button>
         </div>
     </div>
 
-    <div id="dashboard" class="card" style="display:none;">
-        <div class="map-container">
-            <div id="map"></div>
-            <div class="map-overlay"></div>
-        </div>
-        <button id="btnWakeLock" onclick="toggleWakeLock()" class="btn-secondary">
-            Pantalla: AUTO (Se apagará)
-        </button>
-        <div class="grid" style="margin-top: 15px;">
-            <div style="background: #252525; padding: 10px; border-radius: 10px;">
-                <span style="font-size: 0.8em; color: #aaa;">Odómetro</span>
-                <span id="dispOdo" class="valor">0</span>
-            </div>
-            <div style="background: #252525; padding: 10px; border-radius: 10px;">
-                <span style="font-size: 0.8em; color: #aaa;">Este viaje</span>
-                <span id="distancia" class="valor">0.00</span>
-            </div>
-        </div>
-        <div style="font-size: 2.2em; margin: 15px 0; font-weight: bold;">🔋 <span id="bateria">100</span>%</div>
-        <p style="color: #aaa; margin: 0;">Restante estimado: <span id="restante" class="valor" style="display: inline;">0.00</span> km</p>
-        <div id="alertaCarga" class="alert" style="display:none;">⚠️ ¡BATERÍA BAJA!</div>
-        <button onclick="finalizarViaje()" class="btn-stop">🏁 FINALIZAR Y GUARDAR</button>
-    </div>
+    <div class="footer-version">v1.3.0 - PERSISTENCE & SYNC</div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
@@ -138,8 +144,6 @@
                     wakeLock = await navigator.wakeLock.request('screen');
                     btn.innerText = "Pantalla: SIEMPRE ENCENDIDA";
                     btn.style.background = "#007bff";
-                    // Re-solicitar si se minimiza
-                    wakeLock.addEventListener('release', () => { console.log('WakeLock liberado'); });
                 } else {
                     await wakeLock.release();
                     wakeLock = null;
