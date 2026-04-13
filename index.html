@@ -82,24 +82,24 @@
         <div id="tab-impacto" class="tab-content" style="display:none;">
             <div class="grid">
                 <div class="card">
-                    <div class="impact-icon">🌳</div>
-                    <div class="impact-label">Bosque</div>
-                    <div class="impact-val"><span id="treesVal">0</span></div>
-                    <div style="font-size:0.7em; color:#888;">Árboles cuidando tu aire hoy</div>
+                    <div class="impact-icon">🥟</div>
+                    <div class="impact-label">Empanadas</div>
+                    <div class="impact-val"><span id="empanadaVal">0</span></div>
+                    <div style="font-size:0.7em; color:#888;">Ahorradas por no usar gasolina</div>
                 </div>
                 <div class="card">
-                    <div class="impact-icon">💧</div>
-                    <div class="impact-label">Agua</div>
-                    <div class="impact-val"><span id="waterVal">0.0</span>L</div>
-                    <div style="font-size:0.7em; color:#888;">Ahorrada en refinación</div>
+                    <div class="impact-icon">🛢️</div>
+                    <div class="impact-label">Aceite</div>
+                    <div class="impact-val"><span id="oilVal">0.0</span>L</div>
+                    <div style="font-size:0.7em; color:#888;">Evitado al medio ambiente</div>
                 </div>
             </div>
             <div class="grid">
                 <div class="card">
-                    <div class="impact-icon">⛽</div>
-                    <div class="impact-label">Gasolina</div>
-                    <div class="impact-val"><span id="gasVal">0.0</span></div>
-                    <div style="font-size:0.7em; color:#888;">Galones no quemados</div>
+                    <div class="impact-icon">🤫</div>
+                    <div class="impact-label">Silencio</div>
+                    <div class="impact-val"><span id="silenceVal">0.0</span></div>
+                    <div style="font-size:0.7em; color:#888;">Kilómetros sin ruido de motor</div>
                 </div>
                 <div class="card">
                     <div class="impact-icon">💰</div>
@@ -108,11 +108,19 @@
                     <div style="font-size:0.7em; color:#888;">COP vs Chevrolet Sail</div>
                 </div>
             </div>
-            <div class="card">
-                <div class="impact-icon">☁️</div>
-                <div class="impact-label">CO2 No Emitido</div>
-                <div class="impact-val"><span id="co2Val">0.0</span> kg</div>
-                <div style="font-size:0.7em; color:#888;">Limpieza atmosférica acumulada</div>
+            <div class="grid">
+                <div class="card">
+                    <div class="impact-icon">🌳</div>
+                    <div class="impact-label">Bosque</div>
+                    <div class="impact-val"><span id="treesVal">0</span></div>
+                    <div style="font-size:0.7em; color:#888;">Árboles cuidando tu aire</div>
+                </div>
+                <div class="card">
+                    <div class="impact-icon">⛽</div>
+                    <div class="impact-label">Gasolina</div>
+                    <div class="impact-val"><span id="gasVal">0.0</span></div>
+                    <div style="font-size:0.7em; color:#888;">Galones no quemados</div>
+                </div>
             </div>
         </div>
 
@@ -128,7 +136,7 @@
         </div>
     </div>
 
-    <div class="footer-version">v1.7.0 - VISUAL IMPACT DASHBOARD</div>
+    <div class="footer-version">v1.8.0 - GAMIFIED IMPACT DASHBOARD</div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
@@ -155,22 +163,28 @@
         function calcularImpacto() {
             const odoTotal = parseFloat(localStorage.getItem('ev_odo') || 0);
             
-            // CO2: Chevrolet Sail 1.4L emite aprox 0.22kg por km
-            const co2 = (odoTotal * 0.22).toFixed(2);
-            // Gasolina: 1 galón por cada 40km
-            const galones = (odoTotal / 40).toFixed(2);
-            // Agua: ~10 litros por galón de gasolina refinado
-            const agua = (galones * 10).toFixed(1);
-            // Ahorro: ~$350 COP por km
+            // Ahorro COP vs Sail: ~$350 por km
             const ahorro = Math.round(odoTotal * 350);
-            // Árboles: 220g / 54g diarios = ~4 árboles por km
+            // Empanada Index: Ahorro / $3500 COP
+            const empanadas = Math.floor(ahorro / 3500);
+            // Aceite: 4L cada 5000km = 0.0008L por km
+            const aceite = (odoTotal * 0.0008).toFixed(2);
+            // Silencio: Odo total en km
+            const silencio = odoTotal.toFixed(1);
+            
+            // CO2: 0.22kg por km
+            const co2 = (odoTotal * 0.22).toFixed(2);
+            // Gasolina: 1 galón / 40km
+            const galones = (odoTotal / 40).toFixed(2);
+            // Árboles diarios: (odo * 220g) / 54g
             const arboles = Math.round((odoTotal * 220) / 54);
 
-            document.getElementById('co2Val').innerText = co2;
-            document.getElementById('gasVal').innerText = galones;
-            document.getElementById('waterVal').innerText = agua;
+            document.getElementById('empanadaVal').innerText = empanadas;
+            document.getElementById('oilVal').innerText = aceite;
+            document.getElementById('silenceVal').innerText = silencio;
             document.getElementById('moneyVal').innerText = ahorro.toLocaleString('es-CO');
             document.getElementById('treesVal').innerText = arboles;
+            document.getElementById('gasVal').innerText = galones;
         }
 
         function actualizarEstadoInicial() {
