@@ -7,134 +7,159 @@
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: white; text-align: center; padding: 10px; margin: 0; overflow-x: hidden; display: flex; flex-direction: column; min-height: 100vh; }
-        .content { flex: 1; }
-        .card { background: #1e1e1e; border-radius: 15px; padding: 15px; margin-bottom: 10px; border: 1px solid #333; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        :root { --main-green: #00e676; --bg-dark: #121212; --card-bg: #1e1e1e; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg-dark); color: white; text-align: center; padding: 0; margin: 0; overflow-x: hidden; display: flex; flex-direction: column; min-height: 100vh; }
+        .content { flex: 1; padding: 10px; margin-top: 50px; }
+        .card { background: var(--card-bg); border-radius: 15px; padding: 15px; margin-bottom: 10px; border: 1px solid #333; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        
+        /* Navegación por Pestañas */
+        .nav-tabs { position: fixed; top: 0; width: 100%; background: #1a1a1a; display: flex; justify-content: space-around; z-index: 2000; border-bottom: 1px solid #333; }
+        .tab-btn { padding: 15px; color: #888; border: none; background: none; font-weight: bold; font-size: 0.9em; flex: 1; }
+        .tab-btn.active { color: var(--main-green); border-bottom: 3px solid var(--main-green); }
+
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         label { font-size: 0.8em; color: #aaa; margin-bottom: 4px; display: block; text-align: left; }
         input { width: 90%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #444; background: #252525; color: white; font-size: 16px; }
-        button { background: #00e676; color: black; border: none; padding: 15px; border-radius: 10px; font-weight: bold; width: 100%; cursor: pointer; font-size: 16px; transition: 0.3s; }
-        button:active { transform: scale(0.98); opacity: 0.8; }
+        button { background: var(--main-green); color: black; border: none; padding: 15px; border-radius: 10px; font-weight: bold; width: 100%; cursor: pointer; font-size: 16px; transition: 0.3s; }
         .btn-reset { background: #ff9100; color: white; margin-bottom: 10px; }
         .btn-stop { background: #ff5252 !important; color: white; margin-top: 15px; }
-        .btn-secondary { background: #444; color: white; border: 2px solid #555; }
         
-        /* Batería Circular */
-        .battery-container { position: relative; width: 120px; height: 120px; margin: 0 auto 15px auto; }
+        /* Estilo de la pestaña de Impacto */
+        .impact-val { font-size: 1.8em; font-weight: bold; color: var(--main-green); margin: 5px 0; }
+        .impact-label { font-size: 0.8em; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Batería y Moto */
+        .battery-container { position: relative; width: 120px; height: 120px; margin: 0 auto 10px auto; }
         .battery-svg { transform: rotate(-90deg); width: 120px; height: 120px; }
         .circle-bg { fill: none; stroke: #333; stroke-width: 8; }
-        .circle-progress { fill: none; stroke: #00e676; stroke-width: 8; stroke-linecap: round; stroke-dasharray: 314; stroke-dashoffset: 314; transition: stroke-dashoffset 1s ease-in-out; }
+        .circle-progress { fill: none; stroke: var(--main-green); stroke-width: 8; stroke-linecap: round; stroke-dasharray: 314; stroke-dashoffset: 314; transition: stroke-dashoffset 1s; }
         .battery-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.5em; font-weight: bold; }
-
-        /* NUEVA ANIMACIÓN DE MOTO */
-        .moto-track { position: relative; width: 90%; height: 40px; border-bottom: 2px dashed #333; margin: 10px auto 25px auto; }
-        .moto-icon { position: absolute; bottom: 5px; left: 0%; font-size: 24px; transition: left 1s ease-in-out; transform: scaleX(-1); } /* Invertida para que mire a la derecha */
-        .energy-icon { position: absolute; bottom: 5px; right: 0; font-size: 24px; color: #ff9100; }
+        .moto-track { position: relative; width: 90%; height: 35px; border-bottom: 1px dashed #333; margin: 5px auto 15px auto; }
+        .moto-icon { position: absolute; bottom: 5px; left: 0%; font-size: 22px; transition: left 1s; transform: scaleX(-1); }
 
         #map { height: 220px; width: 100%; border-radius: 15px; border: 1px solid #444; }
-        .map-container { position: relative; margin-bottom: 10px; }
-        .map-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; background: rgba(0,0,0,0); }
-        .valor { color: #00e676; font-weight: bold; font-size: 1.2em; display: block; }
-        .historial-item { text-align: left; font-size: 0.85em; border-bottom: 1px solid #333; padding: 10px 0; color: #ddd; }
-        .tag-manual { color: #ff9100; font-size: 0.8em; font-weight: bold; }
-        .alert { color: #ff5252; font-weight: bold; animation: blink 1s infinite; margin-top: 10px; }
-        .footer-version { font-size: 0.65em; color: #333; margin: 15px 0 5px 0; font-weight: 300; letter-spacing: 1px; }
-        #listaHistorial { max-height: 250px; overflow-y: auto; padding-right: 5px; }
+        .map-container { position: relative; }
+        .map-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; }
+        .historial-item { text-align: left; font-size: 0.85em; border-bottom: 1px solid #333; padding: 10px 0; }
+        .footer-version { font-size: 0.65em; color: #333; padding: 15px 0; }
+        #listaHistorial { max-height: 200px; overflow-y: auto; }
         @keyframes blink { 50% { opacity: 0; } }
     </style>
 </head>
 <body>
 
+    <nav class="nav-tabs">
+        <button class="tab-btn active" onclick="switchTab('tab-ruta')">RUTA</button>
+        <button class="tab-btn" onclick="switchTab('tab-impacto')">IMPACTO</button>
+        <button class="tab-btn" onclick="switchTab('tab-ajustes')">AJUSTES</button>
+    </nav>
+
     <div class="content">
-        <div id="setup" class="card">
-            <h2 style="color: #00e676; margin: 0 0 15px 0;">⚡ EV Tracker Pro</h2>
-            
-            <div class="battery-container">
-                <svg class="battery-svg">
-                    <circle class="circle-bg" cx="60" cy="60" r="50"></circle>
-                    <circle id="circleMain" class="circle-progress" cx="60" cy="60" r="50"></circle>
-                </svg>
-                <div class="battery-text"><span id="percMain">0</span>%</div>
-            </div>
-
-            <div class="moto-track">
-                <div id="motoIcon" class="moto-icon">🛵</div>
-                <div class="energy-icon">🔌</div>
-            </div>
-
-            <div style="margin-bottom: 20px;">
-                <span style="color: #aaa; font-size: 0.9em;">Estimado restante:</span>
-                <div style="font-size: 1.8em; font-weight: bold; color: #00e676;"><span id="kmMain">0.0</span> km</div>
-            </div>
-            
-            <div class="grid">
-                <div>
-                    <label>Odómetro Total (km)</label>
-                    <input type="number" id="odoTotal" step="0.1" onchange="actualizarEstadoInicial()">
+        <div id="tab-ruta" class="tab-content">
+            <div id="setup-view">
+                <div class="card">
+                    <div class="battery-container">
+                        <svg class="battery-svg"><circle class="circle-bg" cx="60" cy="60" r="50"></circle><circle id="circleMain" class="circle-progress" cx="60" cy="60" r="50"></circle></svg>
+                        <div class="battery-text"><span id="percMain">0</span>%</div>
+                    </div>
+                    <div class="moto-track"><div id="motoIcon" class="moto-icon">🛵</div><div style="position:absolute;right:0;bottom:5px;">🔌</div></div>
+                    <div class="impact-label">Restante estimado</div>
+                    <div class="impact-val"><span id="kmMain">0.0</span> km</div>
+                    <button onclick="iniciarViaje()" style="margin-top:15px;">▶️ INICIAR RECORRIDO</button>
                 </div>
-                <div>
-                    <label>Autonomía Máx (km)</label>
-                    <input type="number" id="autonomiaMax" onchange="actualizarEstadoInicial()">
+                <div class="card" style="text-align: left;">
+                    <h4 style="margin:0 0 10px 0; border-bottom:1px solid #444;">Historial</h4>
+                    <div id="listaHistorial"></div>
                 </div>
             </div>
-            <button onclick="resetearCarga()" class="btn-reset">🔋 Resetear Ciclo de Carga</button>
-            <p style="font-size: 0.75em; color: #888; margin-bottom: 15px;">Última carga: <span id="infoCarga">-</span></p>
-            <button onclick="iniciarViaje()" style="font-size: 1.2em;">▶️ INICIAR RECORRIDO</button>
-            <div style="margin-top: 20px; text-align: left;">
-                <h4 style="border-bottom: 1px solid #444; padding-bottom: 5px;">Últimos 20 Viajes</h4>
-                <div id="listaHistorial"></div>
+
+            <div id="dashboard-view" style="display:none;">
+                <div class="card">
+                    <div class="map-container"><div id="map"></div><div class="map-overlay"></div></div>
+                    <button id="btnWakeLock" onclick="toggleWakeLock()" style="background:#444; color:white; margin-top:10px; border:1px solid #555;">Pantalla: AUTO</button>
+                    <div class="grid" style="margin-top:15px;">
+                        <div style="background:#252525; padding:10px; border-radius:10px;"><span class="impact-label">Total Odo</span><span id="dispOdo" class="valor">0</span></div>
+                        <div style="background:#252525; padding:10px; border-radius:10px;"><span class="impact-label">En viaje</span><span id="distancia" class="valor">0.00</span></div>
+                    </div>
+                    <button onclick="finalizarViaje()" class="btn-stop">🏁 FINALIZAR</button>
+                </div>
             </div>
         </div>
 
-        <div id="dashboard" class="card" style="display:none;">
-            <div class="map-container">
-                <div id="map"></div>
-                <div class="map-overlay"></div>
+        <div id="tab-impacto" class="tab-content" style="display:none;">
+            <div class="card">
+                <div class="impact-label">🍃 Huella Evitada</div>
+                <div class="impact-val"><span id="co2Val">0.0</span> kg CO2</div>
+                <p style="font-size:0.8em; color:#888;">Equivale a <span id="treesVal">0</span> árboles absorbiendo CO2 por un día completo.</p>
             </div>
-            <button id="btnWakeLock" onclick="toggleWakeLock()" class="btn-secondary">
-                Pantalla: AUTO (Se apagará)
-            </button>
-            <div class="grid" style="margin-top: 15px;">
-                <div style="background: #252525; padding: 10px; border-radius: 10px;">
-                    <span style="font-size: 0.8em; color: #aaa;">Odómetro</span>
-                    <span id="dispOdo" class="valor">0</span>
-                </div>
-                <div style="background: #252525; padding: 10px; border-radius: 10px;">
-                    <span style="font-size: 0.8em; color: #aaa;">Este viaje</span>
-                    <span id="distancia" class="valor">0.00</span>
-                </div>
+            <div class="card">
+                <div class="impact-label">💰 Ahorro Estimado</div>
+                <div class="impact-val">$ <span id="moneyVal">0</span> COP</div>
+                <p style="font-size:0.8em; color:#888;">Dinero no gastado en gasolina en comparación con un Chevrolet Sail (1.4L).</p>
             </div>
-            <div style="font-size: 2.2em; margin: 15px 0; font-weight: bold;">🔋 <span id="bateria">100</span>%</div>
-            <p style="color: #aaa; margin: 0;">Restante estimado: <span id="restante" class="valor" style="display: inline;">0.00</span> km</p>
-            <div id="alertaCarga" class="alert" style="display:none;">⚠️ ¡BATERÍA BAJA!</div>
-            <button onclick="finalizarViaje()" class="btn-stop">🏁 FINALIZAR Y GUARDAR</button>
+        </div>
+
+        <div id="tab-ajustes" class="tab-content" style="display:none;">
+            <div class="card">
+                <div class="grid">
+                    <div><label>Odómetro (km)</label><input type="number" id="odoTotal" step="0.1" onchange="actualizarEstadoInicial()"></div>
+                    <div><label>Autonomía (km)</label><input type="number" id="autonomiaMax" onchange="actualizarEstadoInicial()"></div>
+                </div>
+                <button onclick="resetearCarga()" class="btn-reset">🔋 Resetear Ciclo de Carga</button>
+                <p style="font-size: 0.75em; color: #888;">Última carga: <span id="infoCarga">-</span></p>
+            </div>
         </div>
     </div>
 
-    <div class="footer-version">v1.5.0 - MOTO ANIMATION & EXTENDED HISTORY</div>
+    <div class="footer-version">v1.6.1 - IMPACT (SAIL 1.4L BENCHMARK)</div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         let totalDistanciaViaje = 0, ultimaPos = null, watchID = null, map = null, marker = null, wakeLock = null;
 
         window.onload = () => {
-            if (localStorage.getItem('ev_odo')) document.getElementById('odoTotal').value = localStorage.getItem('ev_odo');
-            if (localStorage.getItem('ev_autonomia')) document.getElementById('autonomiaMax').value = localStorage.getItem('ev_autonomia');
+            const savedOdo = localStorage.getItem('ev_odo');
+            const savedAuto = localStorage.getItem('ev_autonomia');
+            if (savedOdo) document.getElementById('odoTotal').value = savedOdo;
+            if (savedAuto) document.getElementById('autonomiaMax').value = savedAuto;
             document.getElementById('infoCarga').innerText = localStorage.getItem('ev_fecha_carga') || "Sin registro";
             actualizarEstadoInicial();
             mostrarHistorial();
         };
 
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).style.display = 'block';
+            event.currentTarget.classList.add('active');
+            if(tabId === 'tab-impacto') calcularImpacto();
+        }
+
+        function calcularImpacto() {
+            const odoTotal = parseFloat(localStorage.getItem('ev_odo') || 0);
+            
+            // Chevrolet Sail 1.4L emite aprox 220g (0.22kg) de CO2 por km
+            const co2 = (odoTotal * 0.22).toFixed(2);
+            
+            // Ahorro aprox $350 COP por km (Gasolina a ~$15,600 vs Luz residencial)
+            const ahorro = Math.round(odoTotal * 350);
+            
+            // Un árbol absorbe ~54g de CO2 al día. 220g / 54g = ~4.07 árboles por km
+            const arboles = Math.round((odoTotal * 220) / 54);
+
+            document.getElementById('co2Val').innerText = co2;
+            document.getElementById('moneyVal').innerText = ahorro.toLocaleString('es-CO'); // Formato de miles para COP
+            document.getElementById('treesVal').innerText = arboles;
+        }
+
         function actualizarEstadoInicial() {
-            const odoInput = document.getElementById('odoTotal');
-            const odoNuevo = parseFloat(odoInput.value) || 0;
+            const odoNuevo = parseFloat(document.getElementById('odoTotal').value) || 0;
             const odoAnterior = parseFloat(localStorage.getItem('ev_odo') || 0);
             const autoMax = parseFloat(document.getElementById('autonomiaMax').value) || 0;
 
             if (odoNuevo > odoAnterior && odoAnterior > 0) {
                 const diff = odoNuevo - odoAnterior;
-                let kmCarga = parseFloat(localStorage.getItem('ev_km_desde_carga') || 0) + diff;
-                localStorage.setItem('ev_km_desde_carga', kmCarga);
+                localStorage.setItem('ev_km_desde_carga', parseFloat(localStorage.getItem('ev_km_desde_carga') || 0) + diff);
                 let hist = JSON.parse(localStorage.getItem('ev_historial') || "[]");
                 hist.unshift({ fecha: new Date().toLocaleString(), distancia: diff.toFixed(2), esManual: true });
                 localStorage.setItem('ev_historial', JSON.stringify(hist.slice(0, 20)));
@@ -146,16 +171,11 @@
             const kmActual = parseFloat(localStorage.getItem('ev_km_desde_carga') || 0);
             if (autoMax > 0) {
                 const porc = Math.max(0, 100 - (kmActual * 100 / autoMax));
-                const rest = Math.max(0, autoMax - kmActual);
-                
                 document.getElementById('percMain').innerText = Math.round(porc);
-                document.getElementById('kmMain').innerText = rest.toFixed(1);
+                document.getElementById('kmMain').innerText = Math.max(0, autoMax - kmActual).toFixed(1);
                 document.getElementById('circleMain').style.strokeDashoffset = 314 - (314 * porc / 100);
                 document.getElementById('circleMain').style.stroke = porc <= 20 ? "#ff5252" : "#00e676";
-
-                // ANIMACIÓN DE LA MOTO: 100% batería -> moto al 0% del track. 0% batería -> moto al 85% del track.
-                const motoPos = 85 - (porc * 0.85); 
-                document.getElementById('motoIcon').style.left = motoPos + "%";
+                document.getElementById('motoIcon').style.left = (85 - (porc * 0.85)) + "%";
             }
         }
 
@@ -164,24 +184,20 @@
             try {
                 if (!wakeLock) {
                     wakeLock = await navigator.wakeLock.request('screen');
-                    btn.innerText = "Pantalla: SIEMPRE ENCENDIDA";
-                    btn.style.background = "#007bff";
+                    btn.innerText = "Pantalla: ENCENDIDA"; btn.style.background = "#007bff";
                 } else {
-                    await wakeLock.release();
-                    wakeLock = null;
-                    btn.innerText = "Pantalla: AUTO (Se apagará)";
-                    btn.style.background = "#444";
+                    await wakeLock.release(); wakeLock = null;
+                    btn.innerText = "Pantalla: AUTO"; btn.style.background = "#444";
                 }
-            } catch (err) { console.error(err); }
+            } catch (err) {}
         }
 
         function iniciarViaje() {
-            const odo = parseFloat(document.getElementById('odoTotal').value) || 0;
             const auto = parseFloat(document.getElementById('autonomiaMax').value) || 0;
-            if (auto <= 0) return alert("Ingresa autonomía");
+            if (auto <= 0) return alert("Configura la autonomía");
             totalDistanciaViaje = 0; ultimaPos = null;
-            document.getElementById('setup').style.display = 'none';
-            document.getElementById('dashboard').style.display = 'block';
+            document.getElementById('setup-view').style.display = 'none';
+            document.getElementById('dashboard-view').style.display = 'block';
             if (!map) {
                 map = L.map('map', { dragging: false, touchZoom: false, scrollWheelZoom: false, doubleClickZoom: false, zoomControl: false, attributionControl: false }).setView([0, 0], 17);
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
@@ -191,34 +207,33 @@
                 const lat = pos.coords.latitude, lon = pos.coords.longitude;
                 map.setView([lat, lon], 17); marker.setLatLng([lat, lon]);
                 if (ultimaPos) {
-                    const d = haversine(ultimaPos.latitude, ultimaPos.longitude, lat, lon);
-                    if (d > 0.005) { totalDistanciaViaje += d; actualizarUI(odo, auto); }
+                    const d = (haversine(ultimaPos.latitude, ultimaPos.longitude, lat, lon)) * 1.173;
+                    if (d > 0.005) { totalDistanciaViaje += d; actualizarUI(auto); }
                 }
                 ultimaPos = { latitude: lat, longitude: lon };
-            }, null, { enableHighAccuracy: true, maximumAge: 0 });
+            }, null, { enableHighAccuracy: true });
         }
 
         function haversine(lat1, lon1, lat2, lon2) {
             const R = 6371;
             const dLat = (lat2 - lat1) * Math.PI / 180, dLon = (lon2 - lon1) * Math.PI / 180;
             const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
-            return (R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))) * 1.173;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         }
 
-        function actualizarUI(odoI, autoM) {
+        function actualizarUI(autoM) {
             let kmC = parseFloat(localStorage.getItem('ev_km_desde_carga') || 0) + totalDistanciaViaje;
             let p = Math.max(0, 100 - (kmC * 100 / autoM));
-            document.getElementById('dispOdo').innerText = (odoI + totalDistanciaViaje).toFixed(1);
+            document.getElementById('dispOdo').innerText = (parseFloat(localStorage.getItem('ev_odo')) + totalDistanciaViaje).toFixed(1);
             document.getElementById('distancia').innerText = totalDistanciaViaje.toFixed(2);
             document.getElementById('bateria').innerText = Math.round(p);
             document.getElementById('restante').innerText = (autoM - kmC).toFixed(2);
-            document.getElementById('alertaCarga').style.display = p <= 20 ? 'block' : 'none';
         }
 
         function finalizarViaje() {
-            localStorage.setItem('ev_odo', document.getElementById('dispOdo').innerText);
-            let kmC = parseFloat(localStorage.getItem('ev_km_desde_carga') || 0) + totalDistanciaViaje;
-            localStorage.setItem('ev_km_desde_carga', kmC);
+            let odoF = parseFloat(document.getElementById('dispOdo').innerText);
+            localStorage.setItem('ev_odo', odoF);
+            localStorage.setItem('ev_km_desde_carga', parseFloat(localStorage.getItem('ev_km_desde_carga') || 0) + totalDistanciaViaje);
             let hist = JSON.parse(localStorage.getItem('ev_historial') || "[]");
             hist.unshift({ fecha: new Date().toLocaleString(), distancia: totalDistanciaViaje.toFixed(2), esManual: false });
             localStorage.setItem('ev_historial', JSON.stringify(hist.slice(0, 20)));
@@ -236,10 +251,10 @@
         function mostrarHistorial() {
             const hist = JSON.parse(localStorage.getItem('ev_historial') || "[]");
             const lista = document.getElementById('listaHistorial');
-            lista.innerHTML = hist.length ? "" : "<p style='color:#666'>Sin viajes registrados.</p>";
+            lista.innerHTML = hist.length ? "" : "<p style='color:#666'>Sin viajes.</p>";
             hist.forEach(i => {
                 const tag = i.esManual ? '<span class="tag-manual"> (Ajuste manual)</span>' : '';
-                lista.innerHTML += `<div class="historial-item">📅 ${i.fecha}${tag}<br>🏁 Distancia: <span class="valor" style="font-size:1em">${i.distancia} km</span></div>`;
+                lista.innerHTML += `<div class="historial-item">📅 ${i.fecha}${tag}<br>🏁 <b>${i.distancia} km</b></div>`;
             });
         }
     </script>
