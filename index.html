@@ -10,7 +10,7 @@
         :root { --main-green: #00e676; --bg-dark: #121212; --card-bg: #1e1e1e; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg-dark); color: white; text-align: center; padding: 0; margin: 0; overflow-x: hidden; display: flex; flex-direction: column; min-height: 100vh; }
         .content { flex: 1; padding: 10px; margin-top: 50px; }
-        .card { background: var(--card-bg); border-radius: 15px; padding: 15px; margin-bottom: 10px; border: 1px solid #333; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .card { background: var(--card-bg); border-radius: 15px; padding: 15px; margin-bottom: 10px; border: 1px solid #333; box-shadow: 0 4px 10px rgba(0,0,0,0.3); position: relative; }
         
         .nav-tabs { position: fixed; top: 0; width: 100%; background: #1a1a1a; display: flex; justify-content: space-around; z-index: 2000; border-bottom: 1px solid #333; }
         .tab-btn { padding: 15px; color: #888; border: none; background: none; font-weight: bold; font-size: 0.9em; flex: 1; }
@@ -24,6 +24,18 @@
         .impact-val { font-size: 1.6em; font-weight: bold; color: var(--main-green); margin: 5px 0; }
         .impact-label { font-size: 0.75em; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
         .impact-icon { font-size: 2em; margin-bottom: 5px; }
+        
+        /* Estilos para tarjetas interactivas */
+        .clickable-card { cursor: pointer; transition: transform 0.2s; }
+        .clickable-card:active { transform: scale(0.95); }
+        .info-icon-small { position: absolute; top: 10px; right: 10px; font-size: 0.9em; color: #666; }
+
+        /* Estilos del Modal Emergente */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 3000; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
+        .modal-box { background: var(--card-bg); padding: 25px; border-radius: 15px; width: 80%; max-width: 350px; border: 1px solid var(--main-green); box-shadow: 0 5px 20px rgba(0,230,118,0.2); text-align: left; position: relative; }
+        .modal-close { position: absolute; top: 15px; right: 15px; font-size: 1.5em; color: #aaa; cursor: pointer; background: none; border: none; padding: 0; line-height: 1; }
+        .modal-title { color: var(--main-green); margin: 0 0 10px 0; font-size: 1.4em; }
+        .modal-text { color: #ddd; font-size: 0.95em; line-height: 1.5; margin: 0; }
 
         .battery-container { position: relative; width: 120px; height: 120px; margin: 0 auto 10px auto; }
         .battery-svg { transform: rotate(-90deg); width: 120px; height: 120px; }
@@ -81,45 +93,87 @@
 
         <div id="tab-impacto" class="tab-content" style="display:none;">
             <div class="grid">
-                <div class="card">
+                <div class="card clickable-card" onclick="mostrarInfo('ahorro')">
+                    <div class="info-icon-small">ℹ️</div>
+                    <div class="impact-icon">💰</div>
+                    <div class="impact-label">Ahorro COP</div>
+                    <div class="impact-val">$<span id="moneyVal">0</span></div>
+                    <div style="font-size:0.7em; color:#888;">vs Chevrolet Sail</div>
+                </div>
+                <div class="card clickable-card" onclick="mostrarInfo('empanadas')">
+                    <div class="info-icon-small">ℹ️</div>
                     <div class="impact-icon">🥟</div>
                     <div class="impact-label">Empanadas</div>
                     <div class="impact-val"><span id="empanadaVal">0</span></div>
-                    <div style="font-size:0.7em; color:#888;">Ahorradas por no usar gasolina</div>
-                </div>
-                <div class="card">
-                    <div class="impact-icon">🛢️</div>
-                    <div class="impact-label">Aceite</div>
-                    <div class="impact-val"><span id="oilVal">0.0</span>L</div>
-                    <div style="font-size:0.7em; color:#888;">Evitado al medio ambiente</div>
+                    <div style="font-size:0.7em; color:#888;">Equivalente de ahorro</div>
                 </div>
             </div>
+            
             <div class="grid">
-                <div class="card">
-                    <div class="impact-icon">🤫</div>
-                    <div class="impact-label">Silencio</div>
-                    <div class="impact-val"><span id="silenceVal">0.0</span></div>
-                    <div style="font-size:0.7em; color:#888;">Kilómetros sin ruido de motor</div>
+                <div class="card clickable-card" onclick="mostrarInfo('co2')">
+                    <div class="info-icon-small">ℹ️</div>
+                    <div class="impact-icon">☁️</div>
+                    <div class="impact-label">CO2 Evitado</div>
+                    <div class="impact-val"><span id="co2Val">0.0</span> kg</div>
+                    <div style="font-size:0.7em; color:#888;">Limpieza atmosférica</div>
                 </div>
-                <div class="card">
-                    <div class="impact-icon">💰</div>
-                    <div class="impact-label">Ahorro</div>
-                    <div class="impact-val">$<span id="moneyVal">0</span></div>
-                    <div style="font-size:0.7em; color:#888;">COP vs Chevrolet Sail</div>
-                </div>
-            </div>
-            <div class="grid">
-                <div class="card">
+                <div class="card clickable-card" onclick="mostrarInfo('arboles')">
+                    <div class="info-icon-small">ℹ️</div>
                     <div class="impact-icon">🌳</div>
                     <div class="impact-label">Bosque</div>
                     <div class="impact-val"><span id="treesVal">0</span></div>
-                    <div style="font-size:0.7em; color:#888;">Árboles cuidando tu aire</div>
+                    <div style="font-size:0.7em; color:#888;">Árboles limpiando 1 día</div>
                 </div>
-                <div class="card">
+            </div>
+
+            <div class="grid">
+                <div class="card clickable-card" onclick="mostrarInfo('gasolina')">
+                    <div class="info-icon-small">ℹ️</div>
                     <div class="impact-icon">⛽</div>
                     <div class="impact-label">Gasolina</div>
                     <div class="impact-val"><span id="gasVal">0.0</span></div>
                     <div style="font-size:0.7em; color:#888;">Galones no quemados</div>
+                </div>
+                <div class="card clickable-card" onclick="mostrarInfo('agua')">
+                    <div class="info-icon-small">ℹ️</div>
+                    <div class="impact-icon">💧</div>
+                    <div class="impact-label">Agua</div>
+                    <div class="impact-val"><span id="waterVal">0.0</span> L</div>
+                    <div style="font-size:0.7em; color:#888;">Ahorrada en refinación</div>
+                </div>
+            </div>
+
+            <div class="grid">
+                <div class="card clickable-card" onclick="mostrarInfo('aceite')">
+                    <div class="info-icon-small">ℹ️</div>
+                    <div class="impact-icon">🛢️</div>
+                    <div class="impact-label">Aceite</div>
+                    <div class="impact-val"><span id="oilVal">0.0</span> L</div>
+                    <div style="font-size:0.7em; color:#888;">Evitado al medio ambiente</div>
+                </div>
+                <div class="card clickable-card" onclick="mostrarInfo('silencio')">
+                    <div class="info-icon-small">ℹ️</div>
+                    <div class="impact-icon">🤫</div>
+                    <div class="impact-label">Silencio</div>
+                    <div class="impact-val"><span id="silenceVal">0.0</span> km</div>
+                    <div style="font-size:0.7em; color:#888;">Sin ruido de motor</div>
+                </div>
+            </div>
+
+            <div class="grid">
+                <div class="card clickable-card" onclick="mostrarInfo('papel')">
+                    <div class="info-icon-small">ℹ️</div>
+                    <div class="impact-icon">📄</div>
+                    <div class="impact-label">Papel</div>
+                    <div class="impact-val"><span id="paperVal">0</span></div>
+                    <div style="font-size:0.7em; color:#888;">Hojas tamaño carta eq.</div>
+                </div>
+                <div class="card clickable-card" onclick="mostrarInfo('luz')">
+                    <div class="info-icon-small">ℹ️</div>
+                    <div class="impact-icon">💡</div>
+                    <div class="impact-label">Luz LED</div>
+                    <div class="impact-val"><span id="lightVal">0</span> h</div>
+                    <div style="font-size:0.7em; color:#888;">De bombilla 10W encendida</div>
                 </div>
             </div>
         </div>
@@ -136,11 +190,45 @@
         </div>
     </div>
 
-    <div class="footer-version">v1.8.0 - GAMIFIED IMPACT DASHBOARD</div>
+    <div id="infoModal" class="modal-overlay" onclick="cerrarModal(event)">
+        <div class="modal-box" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="cerrarModal(event)">×</button>
+            <h3 id="modalTitulo" class="modal-title">Título</h3>
+            <p id="modalTexto" class="modal-text">Texto explicativo.</p>
+        </div>
+    </div>
+
+    <div class="footer-version">v1.9.2 - GAMIFIED IMPACT WITH INFO MODALS</div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         let totalDistanciaViaje = 0, ultimaPos = null, watchID = null, map = null, marker = null, wakeLock = null;
+
+        // DICCIONARIO DE EXPLICACIONES
+        const explicaciones = {
+            'ahorro': { titulo: '💰 Ahorro Económico', texto: 'Calculado a partir de un ahorro neto aproximado de $350 COP por kilómetro frente a un Chevrolet Sail 1.4L (teniendo en cuenta el precio promedio actual del galón de gasolina vs. el costo de carga eléctrica domiciliaria).' },
+            'empanadas': { titulo: '🥟 Índice de la Empanada', texto: 'Tomamos tu ahorro económico total y lo dividimos por $3,500 COP, que es el precio promedio de una empanada tradicional. ¡Una forma deliciosa de ver tu esfuerzo!' },
+            'co2': { titulo: '☁️ CO2 Evitado', texto: 'Un Chevrolet Sail 1.4L emite aproximadamente 220 gramos (0.22 kg) de CO2 por cada kilómetro recorrido. Este número refleja los gases contaminantes que le has ahorrado a la atmósfera.' },
+            'arboles': { titulo: '🌳 Cuidado de Bosques', texto: 'Un árbol adulto absorbe en promedio 54 gramos de CO2 al día. Calculamos cuántos árboles reales se necesitarían trabajando un día completo para absorber la contaminación que tú evitaste.' },
+            'gasolina': { titulo: '⛽ Gasolina Ahorrada', texto: 'Calculado asumiendo un rendimiento urbano de 40 kilómetros por cada galón de gasolina quemado en un vehículo de combustión.' },
+            'agua': { titulo: '💧 Agua Conservada', texto: 'La industria requiere aproximadamente 10 litros de agua pura para los procesos de extracción, refinación y transporte por cada galón de gasolina producido.' },
+            'aceite': { titulo: '🛢️ Aceite Limpio', texto: 'Los motores a combustión exigen cambios de aceite (unos 4 litros cada 5,000 km). Tu vehículo no usa estos lubricantes contaminantes, evitando unos 0.8 ml de desechos fósiles por cada kilómetro.' },
+            'silencio': { titulo: '🤫 Kilómetros de Silencio', texto: 'La contaminación acústica en las ciudades eleva los niveles de estrés. Tu vehículo eléctrico avanza de forma casi inaudible, regalando metros de silencio por donde pasa.' },
+            'papel': { titulo: '📄 Equivalencia en Papel', texto: 'El proceso industrial para fabricar una hoja de papel tamaño carta genera 5 gramos de CO2. Comparamos tu mitigación de emisiones con el proceso de la industria papelera.' },
+            'luz': { titulo: '💡 Ahorro Energético LED', texto: 'Los motores a gasolina desperdician mucha energía en forma de calor. Por cada kilómetro, salvas unos 600 Wh de energía, suficiente para mantener una bombilla LED estándar encendida por 60 horas.' }
+        };
+
+        function mostrarInfo(clave) {
+            const info = explicaciones[clave];
+            document.getElementById('modalTitulo').innerText = info.titulo;
+            document.getElementById('modalTexto').innerText = info.texto;
+            document.getElementById('infoModal').style.display = 'flex';
+        }
+
+        function cerrarModal(event) {
+            if(event) event.preventDefault();
+            document.getElementById('infoModal').style.display = 'none';
+        }
 
         window.onload = () => {
             const savedOdo = localStorage.getItem('ev_odo');
@@ -163,28 +251,27 @@
         function calcularImpacto() {
             const odoTotal = parseFloat(localStorage.getItem('ev_odo') || 0);
             
-            // Ahorro COP vs Sail: ~$350 por km
             const ahorro = Math.round(odoTotal * 350);
-            // Empanada Index: Ahorro / $3500 COP
             const empanadas = Math.floor(ahorro / 3500);
-            // Aceite: 4L cada 5000km = 0.0008L por km
-            const aceite = (odoTotal * 0.0008).toFixed(2);
-            // Silencio: Odo total en km
-            const silencio = odoTotal.toFixed(1);
-            
-            // CO2: 0.22kg por km
             const co2 = (odoTotal * 0.22).toFixed(2);
-            // Gasolina: 1 galón / 40km
-            const galones = (odoTotal / 40).toFixed(2);
-            // Árboles diarios: (odo * 220g) / 54g
             const arboles = Math.round((odoTotal * 220) / 54);
+            const galones = (odoTotal / 40).toFixed(2);
+            const agua = (galones * 10).toFixed(1);
+            const aceite = (odoTotal * 0.0008).toFixed(2);
+            const silencio = odoTotal.toFixed(1);
+            const papel = Math.round(odoTotal * 44);
+            const luz = Math.round(odoTotal * 60);
 
-            document.getElementById('empanadaVal').innerText = empanadas;
+            document.getElementById('moneyVal').innerText = ahorro.toLocaleString('es-CO');
+            document.getElementById('empanadaVal').innerText = empanadas.toLocaleString('es-CO');
+            document.getElementById('co2Val').innerText = co2;
+            document.getElementById('treesVal').innerText = arboles.toLocaleString('es-CO');
+            document.getElementById('gasVal').innerText = galones;
+            document.getElementById('waterVal').innerText = agua;
             document.getElementById('oilVal').innerText = aceite;
             document.getElementById('silenceVal').innerText = silencio;
-            document.getElementById('moneyVal').innerText = ahorro.toLocaleString('es-CO');
-            document.getElementById('treesVal').innerText = arboles;
-            document.getElementById('gasVal').innerText = galones;
+            document.getElementById('paperVal').innerText = papel.toLocaleString('es-CO');
+            document.getElementById('lightVal').innerText = luz.toLocaleString('es-CO');
         }
 
         function actualizarEstadoInicial() {
