@@ -12,7 +12,6 @@
         .content { flex: 1; padding: 10px; margin-top: 50px; }
         .card { background: var(--card-bg); border-radius: 15px; padding: 15px; margin-bottom: 10px; border: 1px solid #333; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         
-        /* Navegación por Pestañas */
         .nav-tabs { position: fixed; top: 0; width: 100%; background: #1a1a1a; display: flex; justify-content: space-around; z-index: 2000; border-bottom: 1px solid #333; }
         .tab-btn { padding: 15px; color: #888; border: none; background: none; font-weight: bold; font-size: 0.9em; flex: 1; }
         .tab-btn.active { color: var(--main-green); border-bottom: 3px solid var(--main-green); }
@@ -21,14 +20,11 @@
         label { font-size: 0.8em; color: #aaa; margin-bottom: 4px; display: block; text-align: left; }
         input { width: 90%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #444; background: #252525; color: white; font-size: 16px; }
         button { background: var(--main-green); color: black; border: none; padding: 15px; border-radius: 10px; font-weight: bold; width: 100%; cursor: pointer; font-size: 16px; transition: 0.3s; }
-        .btn-reset { background: #ff9100; color: white; margin-bottom: 10px; }
-        .btn-stop { background: #ff5252 !important; color: white; margin-top: 15px; }
         
-        /* Estilo de la pestaña de Impacto */
-        .impact-val { font-size: 1.8em; font-weight: bold; color: var(--main-green); margin: 5px 0; }
-        .impact-label { font-size: 0.8em; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+        .impact-val { font-size: 1.6em; font-weight: bold; color: var(--main-green); margin: 5px 0; }
+        .impact-label { font-size: 0.75em; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+        .impact-icon { font-size: 2em; margin-bottom: 5px; }
 
-        /* Batería y Moto */
         .battery-container { position: relative; width: 120px; height: 120px; margin: 0 auto 10px auto; }
         .battery-svg { transform: rotate(-90deg); width: 120px; height: 120px; }
         .circle-bg { fill: none; stroke: #333; stroke-width: 8; }
@@ -38,12 +34,10 @@
         .moto-icon { position: absolute; bottom: 5px; left: 0%; font-size: 22px; transition: left 1s; transform: scaleX(-1); }
 
         #map { height: 220px; width: 100%; border-radius: 15px; border: 1px solid #444; }
-        .map-container { position: relative; }
         .map-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; }
         .historial-item { text-align: left; font-size: 0.85em; border-bottom: 1px solid #333; padding: 10px 0; }
         .footer-version { font-size: 0.65em; color: #333; padding: 15px 0; }
         #listaHistorial { max-height: 200px; overflow-y: auto; }
-        @keyframes blink { 50% { opacity: 0; } }
     </style>
 </head>
 <body>
@@ -63,7 +57,7 @@
                         <div class="battery-text"><span id="percMain">0</span>%</div>
                     </div>
                     <div class="moto-track"><div id="motoIcon" class="moto-icon">🛵</div><div style="position:absolute;right:0;bottom:5px;">🔌</div></div>
-                    <div class="impact-label">Restante estimado</div>
+                    <div class="impact-label">Autonomía estimada</div>
                     <div class="impact-val"><span id="kmMain">0.0</span> km</div>
                     <button onclick="iniciarViaje()" style="margin-top:15px;">▶️ INICIAR RECORRIDO</button>
                 </div>
@@ -72,30 +66,53 @@
                     <div id="listaHistorial"></div>
                 </div>
             </div>
-
             <div id="dashboard-view" style="display:none;">
                 <div class="card">
-                    <div class="map-container"><div id="map"></div><div class="map-overlay"></div></div>
+                    <div style="position:relative"><div id="map"></div><div class="map-overlay"></div></div>
                     <button id="btnWakeLock" onclick="toggleWakeLock()" style="background:#444; color:white; margin-top:10px; border:1px solid #555;">Pantalla: AUTO</button>
                     <div class="grid" style="margin-top:15px;">
-                        <div style="background:#252525; padding:10px; border-radius:10px;"><span class="impact-label">Total Odo</span><span id="dispOdo" class="valor">0</span></div>
+                        <div style="background:#252525; padding:10px; border-radius:10px;"><span class="impact-label">Odo Actual</span><span id="dispOdo" class="valor">0</span></div>
                         <div style="background:#252525; padding:10px; border-radius:10px;"><span class="impact-label">En viaje</span><span id="distancia" class="valor">0.00</span></div>
                     </div>
-                    <button onclick="finalizarViaje()" class="btn-stop">🏁 FINALIZAR</button>
+                    <button onclick="finalizarViaje()" style="background:#ff5252!important; color:white; margin-top:15px;">🏁 FINALIZAR</button>
                 </div>
             </div>
         </div>
 
         <div id="tab-impacto" class="tab-content" style="display:none;">
-            <div class="card">
-                <div class="impact-label">🍃 Huella Evitada</div>
-                <div class="impact-val"><span id="co2Val">0.0</span> kg CO2</div>
-                <p style="font-size:0.8em; color:#888;">Equivale a <span id="treesVal">0</span> árboles absorbiendo CO2 por un día completo.</p>
+            <div class="grid">
+                <div class="card">
+                    <div class="impact-icon">🌳</div>
+                    <div class="impact-label">Bosque</div>
+                    <div class="impact-val"><span id="treesVal">0</span></div>
+                    <div style="font-size:0.7em; color:#888;">Árboles cuidando tu aire hoy</div>
+                </div>
+                <div class="card">
+                    <div class="impact-icon">💧</div>
+                    <div class="impact-label">Agua</div>
+                    <div class="impact-val"><span id="waterVal">0.0</span>L</div>
+                    <div style="font-size:0.7em; color:#888;">Ahorrada en refinación</div>
+                </div>
+            </div>
+            <div class="grid">
+                <div class="card">
+                    <div class="impact-icon">⛽</div>
+                    <div class="impact-label">Gasolina</div>
+                    <div class="impact-val"><span id="gasVal">0.0</span></div>
+                    <div style="font-size:0.7em; color:#888;">Galones no quemados</div>
+                </div>
+                <div class="card">
+                    <div class="impact-icon">💰</div>
+                    <div class="impact-label">Ahorro</div>
+                    <div class="impact-val">$<span id="moneyVal">0</span></div>
+                    <div style="font-size:0.7em; color:#888;">COP vs Chevrolet Sail</div>
+                </div>
             </div>
             <div class="card">
-                <div class="impact-label">💰 Ahorro Estimado</div>
-                <div class="impact-val">$ <span id="moneyVal">0</span> COP</div>
-                <p style="font-size:0.8em; color:#888;">Dinero no gastado en gasolina en comparación con un Chevrolet Sail (1.4L).</p>
+                <div class="impact-icon">☁️</div>
+                <div class="impact-label">CO2 No Emitido</div>
+                <div class="impact-val"><span id="co2Val">0.0</span> kg</div>
+                <div style="font-size:0.7em; color:#888;">Limpieza atmosférica acumulada</div>
             </div>
         </div>
 
@@ -105,13 +122,13 @@
                     <div><label>Odómetro (km)</label><input type="number" id="odoTotal" step="0.1" onchange="actualizarEstadoInicial()"></div>
                     <div><label>Autonomía (km)</label><input type="number" id="autonomiaMax" onchange="actualizarEstadoInicial()"></div>
                 </div>
-                <button onclick="resetearCarga()" class="btn-reset">🔋 Resetear Ciclo de Carga</button>
+                <button onclick="resetearCarga()" style="background:#ff9100; color:white; margin-bottom:10px;">🔋 Resetear Carga</button>
                 <p style="font-size: 0.75em; color: #888;">Última carga: <span id="infoCarga">-</span></p>
             </div>
         </div>
     </div>
 
-    <div class="footer-version">v1.6.1 - IMPACT (SAIL 1.4L BENCHMARK)</div>
+    <div class="footer-version">v1.7.0 - VISUAL IMPACT DASHBOARD</div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
@@ -138,17 +155,21 @@
         function calcularImpacto() {
             const odoTotal = parseFloat(localStorage.getItem('ev_odo') || 0);
             
-            // Chevrolet Sail 1.4L emite aprox 220g (0.22kg) de CO2 por km
+            // CO2: Chevrolet Sail 1.4L emite aprox 0.22kg por km
             const co2 = (odoTotal * 0.22).toFixed(2);
-            
-            // Ahorro aprox $350 COP por km (Gasolina a ~$15,600 vs Luz residencial)
+            // Gasolina: 1 galón por cada 40km
+            const galones = (odoTotal / 40).toFixed(2);
+            // Agua: ~10 litros por galón de gasolina refinado
+            const agua = (galones * 10).toFixed(1);
+            // Ahorro: ~$350 COP por km
             const ahorro = Math.round(odoTotal * 350);
-            
-            // Un árbol absorbe ~54g de CO2 al día. 220g / 54g = ~4.07 árboles por km
+            // Árboles: 220g / 54g diarios = ~4 árboles por km
             const arboles = Math.round((odoTotal * 220) / 54);
 
             document.getElementById('co2Val').innerText = co2;
-            document.getElementById('moneyVal').innerText = ahorro.toLocaleString('es-CO'); // Formato de miles para COP
+            document.getElementById('gasVal').innerText = galones;
+            document.getElementById('waterVal').innerText = agua;
+            document.getElementById('moneyVal').innerText = ahorro.toLocaleString('es-CO');
             document.getElementById('treesVal').innerText = arboles;
         }
 
@@ -231,8 +252,7 @@
         }
 
         function finalizarViaje() {
-            let odoF = parseFloat(document.getElementById('dispOdo').innerText);
-            localStorage.setItem('ev_odo', odoF);
+            localStorage.setItem('ev_odo', document.getElementById('dispOdo').innerText);
             localStorage.setItem('ev_km_desde_carga', parseFloat(localStorage.getItem('ev_km_desde_carga') || 0) + totalDistanciaViaje);
             let hist = JSON.parse(localStorage.getItem('ev_historial') || "[]");
             hist.unshift({ fecha: new Date().toLocaleString(), distancia: totalDistanciaViaje.toFixed(2), esManual: false });
@@ -253,7 +273,7 @@
             const lista = document.getElementById('listaHistorial');
             lista.innerHTML = hist.length ? "" : "<p style='color:#666'>Sin viajes.</p>";
             hist.forEach(i => {
-                const tag = i.esManual ? '<span class="tag-manual"> (Ajuste manual)</span>' : '';
+                const tag = i.esManual ? '<span class="tag-manual"> (Manual)</span>' : '';
                 lista.innerHTML += `<div class="historial-item">📅 ${i.fecha}${tag}<br>🏁 <b>${i.distancia} km</b></div>`;
             });
         }
