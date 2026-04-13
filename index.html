@@ -19,11 +19,17 @@
         .btn-stop { background: #ff5252 !important; color: white; margin-top: 15px; }
         .btn-secondary { background: #444; color: white; border: 2px solid #555; }
         
+        /* Batería Circular */
         .battery-container { position: relative; width: 120px; height: 120px; margin: 0 auto 15px auto; }
         .battery-svg { transform: rotate(-90deg); width: 120px; height: 120px; }
         .circle-bg { fill: none; stroke: #333; stroke-width: 8; }
         .circle-progress { fill: none; stroke: #00e676; stroke-width: 8; stroke-linecap: round; stroke-dasharray: 314; stroke-dashoffset: 314; transition: stroke-dashoffset 1s ease-in-out; }
         .battery-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.5em; font-weight: bold; }
+
+        /* NUEVA ANIMACIÓN DE MOTO */
+        .moto-track { position: relative; width: 90%; height: 40px; border-bottom: 2px dashed #333; margin: 10px auto 25px auto; }
+        .moto-icon { position: absolute; bottom: 5px; left: 0%; font-size: 24px; transition: left 1s ease-in-out; transform: scaleX(-1); } /* Invertida para que mire a la derecha */
+        .energy-icon { position: absolute; bottom: 5px; right: 0; font-size: 24px; color: #ff9100; }
 
         #map { height: 220px; width: 100%; border-radius: 15px; border: 1px solid #444; }
         .map-container { position: relative; margin-bottom: 10px; }
@@ -33,10 +39,8 @@
         .tag-manual { color: #ff9100; font-size: 0.8em; font-weight: bold; }
         .alert { color: #ff5252; font-weight: bold; animation: blink 1s infinite; margin-top: 10px; }
         .footer-version { font-size: 0.65em; color: #333; margin: 15px 0 5px 0; font-weight: 300; letter-spacing: 1px; }
-        @keyframes blink { 50% { opacity: 0; } }
-
-        /* Contenedor de historial con scroll */
         #listaHistorial { max-height: 250px; overflow-y: auto; padding-right: 5px; }
+        @keyframes blink { 50% { opacity: 0; } }
     </style>
 </head>
 <body>
@@ -44,6 +48,7 @@
     <div class="content">
         <div id="setup" class="card">
             <h2 style="color: #00e676; margin: 0 0 15px 0;">⚡ EV Tracker Pro</h2>
+            
             <div class="battery-container">
                 <svg class="battery-svg">
                     <circle class="circle-bg" cx="60" cy="60" r="50"></circle>
@@ -51,10 +56,17 @@
                 </svg>
                 <div class="battery-text"><span id="percMain">0</span>%</div>
             </div>
+
+            <div class="moto-track">
+                <div id="motoIcon" class="moto-icon">🛵</div>
+                <div class="energy-icon">🔌</div>
+            </div>
+
             <div style="margin-bottom: 20px;">
                 <span style="color: #aaa; font-size: 0.9em;">Estimado restante:</span>
                 <div style="font-size: 1.8em; font-weight: bold; color: #00e676;"><span id="kmMain">0.0</span> km</div>
             </div>
+            
             <div class="grid">
                 <div>
                     <label>Odómetro Total (km)</label>
@@ -99,7 +111,7 @@
         </div>
     </div>
 
-    <div class="footer-version">v1.4.0 - EXTENDED HISTORY (20)</div>
+    <div class="footer-version">v1.5.0 - MOTO ANIMATION & EXTENDED HISTORY</div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
@@ -125,7 +137,7 @@
                 localStorage.setItem('ev_km_desde_carga', kmCarga);
                 let hist = JSON.parse(localStorage.getItem('ev_historial') || "[]");
                 hist.unshift({ fecha: new Date().toLocaleString(), distancia: diff.toFixed(2), esManual: true });
-                localStorage.setItem('ev_historial', JSON.stringify(hist.slice(0, 20))); // SUBIDO A 20
+                localStorage.setItem('ev_historial', JSON.stringify(hist.slice(0, 20)));
                 mostrarHistorial();
             }
             localStorage.setItem('ev_odo', odoNuevo);
@@ -135,10 +147,15 @@
             if (autoMax > 0) {
                 const porc = Math.max(0, 100 - (kmActual * 100 / autoMax));
                 const rest = Math.max(0, autoMax - kmActual);
+                
                 document.getElementById('percMain').innerText = Math.round(porc);
                 document.getElementById('kmMain').innerText = rest.toFixed(1);
                 document.getElementById('circleMain').style.strokeDashoffset = 314 - (314 * porc / 100);
                 document.getElementById('circleMain').style.stroke = porc <= 20 ? "#ff5252" : "#00e676";
+
+                // ANIMACIÓN DE LA MOTO: 100% batería -> moto al 0% del track. 0% batería -> moto al 85% del track.
+                const motoPos = 85 - (porc * 0.85); 
+                document.getElementById('motoIcon').style.left = motoPos + "%";
             }
         }
 
@@ -204,7 +221,7 @@
             localStorage.setItem('ev_km_desde_carga', kmC);
             let hist = JSON.parse(localStorage.getItem('ev_historial') || "[]");
             hist.unshift({ fecha: new Date().toLocaleString(), distancia: totalDistanciaViaje.toFixed(2), esManual: false });
-            localStorage.setItem('ev_historial', JSON.stringify(hist.slice(0, 20))); // SUBIDO A 20
+            localStorage.setItem('ev_historial', JSON.stringify(hist.slice(0, 20)));
             location.reload();
         }
 
@@ -219,7 +236,7 @@
         function mostrarHistorial() {
             const hist = JSON.parse(localStorage.getItem('ev_historial') || "[]");
             const lista = document.getElementById('listaHistorial');
-            lista.innerHTML = hist.length ? "" : "<p style='color:#666'>Sin viajes.</p>";
+            lista.innerHTML = hist.length ? "" : "<p style='color:#666'>Sin viajes registrados.</p>";
             hist.forEach(i => {
                 const tag = i.esManual ? '<span class="tag-manual"> (Ajuste manual)</span>' : '';
                 lista.innerHTML += `<div class="historial-item">📅 ${i.fecha}${tag}<br>🏁 Distancia: <span class="valor" style="font-size:1em">${i.distancia} km</span></div>`;
